@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models\Document;
+
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use PhpOffice\PhpWord\TemplateProcessor;
+
+class Template extends Model
+{
+    use HasFactory;
+    protected const PATH = 'templates';
+
+    protected $fillable = ['name'];
+
+    protected $casts = [
+        'bindings' => 'array'
+    ];
+
+    public function compile($params)
+    {
+        $proc = new TemplateProcessor($this->getStoragePath());
+        $proc->setValues($params);
+        return $proc->save();
+    }
+
+    public static function createFromUpload(Request $request)
+    {
+        $template = new self();
+        $template->name = $request->name;
+        $template->path = $request->file('template_file')->store(self::getStoragePrefix());
+        $template->hash = $template->getFileHash();
+        $template->bindings = $template->resolveBindings();
+        $template->save();
+
+        return $template;
+    }
+
+    public function resolveBindings()
+    {
+        $proc = new TemplateProcessor($this->getStoragePath());
+        return array_combine($proc->getVariables(), $proc->getVariables());
+    }
+
+    public function getFileHash()
+    {
+        return sha1_file($this->getStoragePath());
+    }
+
+    public static function getStoragePrefix()
+    {
+        return Template::PATH;
+    }
+
+    public function getStoragePath()
+    {
+        return storage_path('app/'.$this->path);
+    }
+
+    public function scopeHash(Builder $query, $hash)
+    {
+        return $query->where('hash', $hash);
+    }
+}
