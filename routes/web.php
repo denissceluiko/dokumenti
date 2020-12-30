@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Document\DocumentController;
 use App\Http\Controllers\Document\TemplateController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +19,12 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::resource('template', TemplateController::class, ['only' => ['create', 'store', 'show']]);
+Route::resource('template', TemplateController::class, ['only' => ['index', 'create', 'store', 'show']]);
 Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
     Route::post('{template}/compile', [TemplateController::class, 'compile'])->name('compile');
+});
+
+Route::resource('document', DocumentController::class, ['only' => ['index', 'show']]);
+Route::group(['prefix' => 'document', 'as' => 'document.'], function() {
+    Route::get('{document}/download', [DocumentController::class, 'download'])->name('download');
 });

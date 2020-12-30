@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Document;
 
 use App\Http\Controllers\Controller;
+use App\Models\Document;
 use App\Models\Document\Template;
 use App\Rules\TemplateUnique;
 use Illuminate\Http\Request;
 
 class TemplateController extends Controller
 {
+    public function index()
+    {
+        $templates = Template::all();
+        return view('document.template.index', compact('templates'));
+    }
+
     public function create()
     {
         return view('document.template.create');
@@ -18,6 +25,7 @@ class TemplateController extends Controller
     {
         $this->validate($request, [
             'name' => 'required|unique:templates,name',
+            'naming' => 'required',
             'template_file' => ['required', 'file', new TemplateUnique],
         ]);
 
@@ -37,7 +45,8 @@ class TemplateController extends Controller
 
         ]);
 
-        return response()->download($template->compile($request->all()), 'document.docx');
+        $document = Document::create($template->compile($request->all()));
+        return redirect()->route('document.show', $document);
     }
 
     public function fill($path)

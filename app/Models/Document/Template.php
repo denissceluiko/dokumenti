@@ -13,7 +13,7 @@ class Template extends Model
     use HasFactory;
     protected const PATH = 'templates';
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'naming'];
 
     protected $casts = [
         'bindings' => 'array'
@@ -21,15 +21,20 @@ class Template extends Model
 
     public function compile($params)
     {
+        $params = array_merge($params, [
+            'x-template-name' => $this->name,
+        ]);
+
         $proc = new TemplateProcessor($this->getStoragePath());
         $proc->setValues($params);
-        return $proc->save();
+        return ['filename' => $this->resolveFilename($params), 'path' => $proc->save()];
     }
 
     public static function createFromUpload(Request $request)
     {
         $template = new self();
         $template->name = $request->name;
+        $template->naming = $request->naming;
         $template->path = $request->file('template_file')->store(self::getStoragePrefix());
         $template->hash = $template->getFileHash();
         $template->bindings = $template->resolveBindings();
@@ -38,10 +43,23 @@ class Template extends Model
         return $template;
     }
 
-    public function resolveBindings()
+    protected function resolveBindings()
     {
         $proc = new TemplateProcessor($this->getStoragePath());
         return array_combine($proc->getVariables(), $proc->getVariables());
+    }
+
+    protected function resolveFilename($params)
+    {
+        $result = $this->naming;
+        preg_match_all('/\$\{(.*?)}/i', $this->naming, $matches);
+
+        for($i=0; $i<count($matches[0]); $i++)
+        {
+            $result = str_replace($matches[0][$i], $params[$matches[1][$i]], $result);
+        }
+
+        return $result.'.docx';
     }
 
     public function getFileHash()
