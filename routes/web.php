@@ -22,6 +22,9 @@ Route::get('/', function () {
 Route::resource('template', TemplateController::class, ['only' => ['index', 'create', 'store', 'show']]);
 Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
     Route::post('{template}/compile', [TemplateController::class, 'compile'])->name('compile');
+    Route::post('{template}/batch', [TemplateController::class, 'batch'])->name('batch');
+    Route::get('{template}/download', [TemplateController::class, 'download'])->name('download');
+    Route::get('{template}/excel', [TemplateController::class, 'excel'])->name('excel');
 });
 
 Route::resource('document', DocumentController::class, ['only' => ['index', 'show']]);

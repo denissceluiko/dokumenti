@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Document;
 
+use App\Exports\TemplateExport;
 use App\Http\Controllers\Controller;
-use App\Models\Document;
 use App\Models\Document\Template;
 use App\Rules\TemplateUnique;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class TemplateController extends Controller
 {
@@ -31,7 +32,7 @@ class TemplateController extends Controller
 
         $template = Template::createFromUpload($request);
 
-        return redirect()->route('document.template.show', $template);
+        return redirect()->route('template.show', $template);
     }
 
     public function show(Template $template)
@@ -41,12 +42,30 @@ class TemplateController extends Controller
 
     public function compile(Template $template, Request $request)
     {
-        $this->validate($request, [
+        $this->validate($request, []);
 
+        $document = $template->compile($request->all());
+        return redirect()->route('document.show', $document);
+    }
+
+    public function batch(Template $template, Request $request)
+    {
+        $this->validate($request, [
+            'template_batch_import_file' => 'required|file',
         ]);
 
-        $document = Document::create($template->compile($request->all()));
-        return redirect()->route('document.show', $document);
+        $template->batch($request->file('template_batch_import_file'));
+        return redirect()->route('document.index');
+    }
+
+    public function download(Template $template)
+    {
+        return response()->download($template->getStoragePath(), $template->name.'.docx');
+    }
+
+    public function excel(Template $template)
+    {
+        return Excel::download(new TemplateExport($template), $template->name.'.xlsx');
     }
 
     public function fill($path)

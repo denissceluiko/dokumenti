@@ -2,10 +2,13 @@
 
 namespace App\Models\Document;
 
+use App\Imports\TemplateBatchImport;
+use App\Models\Document;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 use PhpOffice\PhpWord\TemplateProcessor;
 
 class Template extends Model
@@ -27,7 +30,12 @@ class Template extends Model
 
         $proc = new TemplateProcessor($this->getStoragePath());
         $proc->setValues($params);
-        return ['filename' => $this->resolveFilename($params), 'path' => $proc->save()];
+        return Document::create(['filename' => $this->resolveFilename($params), 'path' => $proc->save()]);
+    }
+
+    public function batch($path)
+    {
+        Excel::import(new TemplateBatchImport($this), $path);
     }
 
     public static function createFromUpload(Request $request)
