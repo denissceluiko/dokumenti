@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('template.index');
 });
 
 Route::resource('template', TemplateController::class, ['only' => ['index', 'create', 'store', 'show']]);
