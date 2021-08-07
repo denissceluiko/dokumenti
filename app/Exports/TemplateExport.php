@@ -19,6 +19,6 @@ class TemplateExport implements FromCollection
     */
     public function collection()
     {
-        return collect([array_keys($this->template->bindings)]);
+        return collect([$this->template->bindings['bindings']]);
     }
 }

@@ -23,6 +23,7 @@ Route::resource('template', TemplateController::class, ['only' => ['index', 'cre
 Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
     Route::post('{template}/compile', [TemplateController::class, 'compile'])->name('compile');
     Route::post('{template}/batch', [TemplateController::class, 'batch'])->name('batch');
+    Route::post('{template}/resolve', [TemplateController::class, 'resolve'])->name('resolve');
     Route::get('{template}/download', [TemplateController::class, 'download'])->name('download');
     Route::get('{template}/excel', [TemplateController::class, 'excel'])->name('excel');
 });

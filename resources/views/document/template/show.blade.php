@@ -6,13 +6,30 @@
 <h1>{{ $template->name }}</h1>
 <h5>{{ $template->naming }}</h5>
 <div><a href="{{ route('template.edit', $template) }}">edit</a></div>
+<div>
+    {{ Form::open(['route' => ['template.resolve', $template]]) }}
+    {{ Form::submit('Reresolve') }}
+    {{ Form::close() }}
+</div>
 {{ Form::open(['route' => ['template.compile', $template]]) }}
 <table>
-@foreach($template->bindings as $field)
+<tr>
+    <td colspan="2"><b>Bindings</b></td>
+</tr>
+@foreach($template->bindings['bindings'] as $field)
 <tr>
 <td>{{ Form::label($field, $field) }}</td>
 <td>{{ Form::text($field) }}</td>
 </tr>
+@endforeach
+<tr>
+    <td colspan="2"><b>Rows</b></td>
+</tr>
+@foreach($template->bindings['rows'] as $row => $fields)
+    <tr>
+        <td><i>{{ $row }}</i></td>
+        <td>{{ Form::textarea($row) }}</td>
+    </tr>
 @endforeach
 </table>
 {{ Form::submit('Submit') }}

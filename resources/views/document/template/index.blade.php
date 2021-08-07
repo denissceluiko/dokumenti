@@ -3,6 +3,9 @@
 @section('title', 'Template list')
 
 @section('content')
+    <div>
+        <a href="{{ route('template.create') }}">New template</a>
+    </div>
     <table>
         <tr>
             <th>Name</th>

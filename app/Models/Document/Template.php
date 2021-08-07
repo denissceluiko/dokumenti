@@ -29,7 +29,12 @@ class Template extends Model
         ]);
 
         $proc = new TemplateProcessor($this->getStoragePath());
+
+        foreach($this->extractRowValues($params) as $row => $value) {
+            $proc->cloneRowAndSetValues($row, json_decode($value, true));
+        }
         $proc->setValues($params);
+
         return Document::create(['filename' => $this->resolveFilename($params), 'path' => $proc->save()]);
     }
 
@@ -72,7 +77,15 @@ class Template extends Model
     protected function resolveBindings()
     {
         $proc = new TemplateProcessor($this->getStoragePath());
-        return array_combine($proc->getVariables(), $proc->getVariables());
+        $bindings = $proc->getVariables();
+        $rowMacros = $this->locateRowMacros($bindings);
+        $bindings = $this->removeRowMacros($bindings, $rowMacros);
+        $rowGroups = $this->groupRowMacros($rowMacros);
+
+        return [
+            'rows' => $rowGroups,
+            'bindings' => $bindings,
+        ];
     }
 
     protected function resolveFilename($params)
@@ -86,6 +99,54 @@ class Template extends Model
         }
 
         return $result.'.docx';
+    }
+
+    public function resolveAgain()
+    {
+        $this->bindings = $this->resolveBindings();
+        $this->save();
+    }
+
+    protected function locateRowMacros(array $bindings)
+    {
+        $rows = preg_grep('/row__(.*)\.?(.*)/i', $bindings);
+        return array_values($rows);
+    }
+
+    protected function removeRowMacros(array $bindings, array $rowMacros)
+    {
+        return array_values(array_filter($bindings, function($binding) use ($rowMacros) {
+            return !in_array($binding, $rowMacros);
+        }));
+    }
+
+    protected function groupRowMacros(array $macros)
+    {
+        $groups = [];
+        foreach ($macros as $macro)
+        {
+            if (strpos($macro, '.')) {
+                list($macro, $cell) = explode('.', $macro);
+                $groups[$macro][] = $macro.'.'.$cell;
+            } else {
+                $groups[$macro] = [];
+            }
+        }
+        return $groups;
+    }
+
+    protected function extractRowValues(array &$params)
+    {
+        $rows = [];
+        $rowNames = array_keys($this->bindings['rows']);
+        $params = array_filter($params, function ($param, $key) use ($rowNames, &$rows) {
+            if (in_array($key, $rowNames)) {
+                $rows[$key] = $param;
+                return false;
+            }
+            return true;
+        }, ARRAY_FILTER_USE_BOTH);
+        return $rows;
     }
 
     public function getFileHash()

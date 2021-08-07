@@ -76,6 +76,12 @@ class TemplateController extends Controller
         return redirect()->route('document.index');
     }
 
+    public function resolve(Template $template)
+    {
+        $template->resolveAgain();
+        return back();
+    }
+
     public function download(Template $template)
     {
         return response()->download($template->getStoragePath(), $template->name.'.docx');
