@@ -14,6 +14,12 @@ class Document extends Model
 
     protected const PATH = 'documents';
 
+    public function delete()
+    {
+        unlink($this->getFullPath());
+        return parent::delete();
+    }
+
     public static function create($params)
     {
         return static::query()->create([

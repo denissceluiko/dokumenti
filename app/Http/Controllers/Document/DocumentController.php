@@ -18,6 +18,12 @@ class DocumentController extends Controller
         return view('document.document.show', compact('document'));
     }
 
+    public function destroy(Document $document)
+    {
+        $document->delete();
+        return back();
+    }
+
     public function download(Document $document)
     {
         return response()->download($document->getFullPath(), $document->name);

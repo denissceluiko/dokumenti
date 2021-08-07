@@ -27,7 +27,7 @@ Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
     Route::get('{template}/excel', [TemplateController::class, 'excel'])->name('excel');
 });
 
-Route::resource('document', DocumentController::class, ['only' => ['index', 'show']]);
+Route::resource('document', DocumentController::class, ['only' => ['index', 'show', 'destroy']]);
 Route::group(['prefix' => 'document', 'as' => 'document.'], function() {
     Route::get('{document}/download', [DocumentController::class, 'download'])->name('download');
 });

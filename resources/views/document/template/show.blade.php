@@ -1,3 +1,8 @@
+@extends('layout.app')
+
+@section('title', $template->name)
+
+@section('content')
 <h1>{{ $template->name }}</h1>
 <h5>{{ $template->naming }}</h5>
 <div><a href="{{ route('template.edit', $template) }}">edit</a></div>
@@ -19,3 +24,4 @@
 {{ Form::file('template_batch_import_file') }}
 {{ Form::submit('Submit') }}
 {{ Form::close() }}
+@endsection
