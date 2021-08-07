@@ -51,6 +51,24 @@ class Template extends Model
         return $template;
     }
 
+    public function updateFromUpload(Request $request)
+    {
+        $this->fill($request->only('name', 'naming'));
+
+        if ($request->has('template_file')) {
+            $oldTemplate = $this->getStoragePath();
+
+            $this->path = $request->file('template_file')->store(self::getStoragePrefix());
+            $this->hash = $this->getFileHash();
+            $this->bindings = $this->resolveBindings();
+
+            unlink($oldTemplate);
+        }
+
+        $this->save();
+        return $this;
+    }
+
     protected function resolveBindings()
     {
         $proc = new TemplateProcessor($this->getStoragePath());

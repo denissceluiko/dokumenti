@@ -1,5 +1,6 @@
 <h1>{{ $template->name }}</h1>
 <h5>{{ $template->naming }}</h5>
+<div><a href="{{ route('template.edit', $template) }}">edit</a></div>
 {{ Form::open(['route' => ['template.compile', $template]]) }}
 <table>
 @foreach($template->bindings as $field)

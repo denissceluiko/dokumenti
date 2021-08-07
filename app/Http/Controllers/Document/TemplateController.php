@@ -35,6 +35,24 @@ class TemplateController extends Controller
         return redirect()->route('template.show', $template);
     }
 
+    public function edit(Template $template)
+    {
+        return view('document.template.edit', compact('template'));
+    }
+
+    public function update(Template $template, Request $request)
+    {
+        $this->validate($request, [
+            'name' => "required|unique:templates,name,{$template->id}",
+            'naming' => 'required',
+            'template_file' => ['nullable', 'file', new TemplateUnique],
+        ]);
+
+        $template->updateFromUpload($request);
+
+        return redirect()->route('template.show', $template);
+    }
+
     public function show(Template $template)
     {
         return view('document.template.show', compact('template'));

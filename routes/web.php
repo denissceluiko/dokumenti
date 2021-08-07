@@ -19,7 +19,7 @@ Route::get('/', function () {
     return redirect()->route('template.index');
 });
 
-Route::resource('template', TemplateController::class, ['only' => ['index', 'create', 'store', 'show']]);
+Route::resource('template', TemplateController::class, ['only' => ['index', 'create', 'store', 'show', 'edit', 'update']]);
 Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
     Route::post('{template}/compile', [TemplateController::class, 'compile'])->name('compile');
     Route::post('{template}/batch', [TemplateController::class, 'batch'])->name('batch');
