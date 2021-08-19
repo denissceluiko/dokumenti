@@ -28,7 +28,7 @@
 @foreach($template->bindings['rows'] as $row => $fields)
     <tr>
         <td><i>{{ $row }}</i></td>
-        <td>{{ Form::textarea($row) }}</td>
+        <td>{{ Form::textarea($row, json_encode(array_combine($fields, $fields), JSON_PRETTY_PRINT)) }}</td>
     </tr>
 @endforeach
 </table>
