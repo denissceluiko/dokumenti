@@ -30,12 +30,18 @@ class Template extends Model
 
         $proc = new TemplateProcessor($this->getStoragePath());
 
-        foreach($this->extractRowValues($params) as $row => $value) {
-            $proc->cloneRowAndSetValues($row, json_decode($value, true));
-        }
-        $proc->setValues($params);
+        $bindings = $this->getRequestBindings($params);
 
-        return Document::create(['filename' => $this->resolveFilename($params), 'path' => $proc->save()]);
+        foreach($bindings['rows'] as $row => $value) {
+            $proc->cloneRowAndSetValues($row, $value);
+        }
+        $proc->setValues($bindings['bindings']);
+
+        return Document::create([
+            'filename' => $this->resolveFilename($params),
+            'path' => $proc->save(),
+            'bindings' => $bindings,
+        ]);
     }
 
     public function batch($path)
@@ -50,7 +56,7 @@ class Template extends Model
         $template->naming = $request->naming;
         $template->path = $request->file('template_file')->store(self::getStoragePrefix());
         $template->hash = $template->getFileHash();
-        $template->bindings = $template->resolveBindings();
+        $template->bindings = $template->resolveFileBindings();
         $template->save();
 
         return $template;
@@ -65,7 +71,7 @@ class Template extends Model
 
             $this->path = $request->file('template_file')->store(self::getStoragePrefix());
             $this->hash = $this->getFileHash();
-            $this->bindings = $this->resolveBindings();
+            $this->bindings = $this->resolveFileBindings();
 
             unlink($oldTemplate);
         }
@@ -74,7 +80,7 @@ class Template extends Model
         return $this;
     }
 
-    protected function resolveBindings()
+    protected function resolveFileBindings()
     {
         $proc = new TemplateProcessor($this->getStoragePath());
         $bindings = $proc->getVariables();
@@ -103,7 +109,7 @@ class Template extends Model
 
     public function resolveAgain()
     {
-        $this->bindings = $this->resolveBindings();
+        $this->bindings = $this->resolveFileBindings();
         $this->save();
     }
 
@@ -149,6 +155,19 @@ class Template extends Model
         return $rows;
     }
 
+    protected function getRequestBindings($params)
+    {
+        $rows = [];
+        foreach($this->extractRowValues($params) as $row => $value) {
+            $rows[$row] = json_decode($value, true);
+        }
+
+        return [
+            'bindings' => collect($params)->only($this->bindings['bindings'])->toArray(),
+            'rows' => $rows,
+        ];
+    }
+
     public function getFileHash()
     {
         return sha1_file($this->getStoragePath());
@@ -167,5 +186,10 @@ class Template extends Model
     public function scopeHash(Builder $query, $hash)
     {
         return $query->where('hash', $hash);
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
     }
 }

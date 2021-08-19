@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Document\Template;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\File;
@@ -10,7 +11,11 @@ use Illuminate\Support\Facades\Storage;
 class Document extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'path'];
+    protected $fillable = ['name', 'path', 'bindings'];
+
+    protected $casts = [
+        'bindings' => 'array',
+    ];
 
     protected const PATH = 'documents';
 
@@ -22,10 +27,10 @@ class Document extends Model
 
     public static function create($params)
     {
-        return static::query()->create([
+        return static::query()->create(collect($params)->replace([
             'name' => self::cleanPath($params['filename']),
-            'path' => self::saveFile($params['path'])
-        ]);
+            'path' => self::saveFile($params['path']),
+        ])->toArray());
     }
 
     public function getFullPath()
@@ -41,5 +46,9 @@ class Document extends Model
     protected static function cleanPath($path)
     {
         return str_replace('/', '.', $path);
+    }
+
+    public function template() {
+        return $this->belongsTo(Template::class);
     }
 }

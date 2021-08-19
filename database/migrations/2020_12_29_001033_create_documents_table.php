@@ -17,6 +17,8 @@ class CreateDocumentsTable extends Migration
             $table->id();
             $table->string('name');
             $table->string('path');
+            $table->bigInteger('template_id');
+            $table->text('bindings');
             $table->timestamps();
         });
     }
