@@ -18,6 +18,12 @@ class DocumentController extends Controller
         return view('document.document.show', compact('document'));
     }
 
+    public function clone(Document $document)
+    {
+        $document->load('template');
+        return view('document.document.clone', compact('document'));
+    }
+
     public function destroy(Document $document)
     {
         $document->delete();

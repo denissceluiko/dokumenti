@@ -27,10 +27,10 @@ class Document extends Model
 
     public static function create($params)
     {
-        return static::query()->create(collect($params)->replace([
+        return static::query()->create(array_replace($params, [
             'name' => self::cleanPath($params['filename']),
             'path' => self::saveFile($params['path']),
-        ])->toArray());
+        ]));
     }
 
     public function getFullPath()

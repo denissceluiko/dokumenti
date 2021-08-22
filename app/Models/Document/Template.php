@@ -37,9 +37,9 @@ class Template extends Model
         }
         $proc->setValues($bindings['bindings']);
 
-        return Document::create([
-            'filename' => $this->resolveFilename($params),
-            'path' => $proc->save(),
+        return $this->documents()->create([
+            'name' => Document::cleanPath($this->resolveFilename($params)),
+            'path' => Document::saveFile($proc->save()),
             'bindings' => $bindings,
         ]);
     }
@@ -135,7 +135,7 @@ class Template extends Model
                 list($macro, $cell) = explode('.', $macro);
                 $groups[$macro][] = $macro.'.'.$cell;
             } else {
-                $groups[$macro] = [];
+                $groups[$macro] = [$macro];
             }
         }
         return $groups;

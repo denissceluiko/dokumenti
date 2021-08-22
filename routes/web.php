@@ -19,7 +19,7 @@ Route::get('/', function () {
     return redirect()->route('template.index');
 });
 
-Route::resource('template', TemplateController::class, ['only' => ['index', 'create', 'store', 'show', 'edit', 'update']]);
+Route::resource('template', TemplateController::class, ['except' => ['delete']]);
 Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
     Route::post('{template}/compile', [TemplateController::class, 'compile'])->name('compile');
     Route::post('{template}/batch', [TemplateController::class, 'batch'])->name('batch');
@@ -30,5 +30,6 @@ Route::group(['prefix' => 'template', 'as' => 'template.'], function() {
 
 Route::resource('document', DocumentController::class, ['only' => ['index', 'show', 'destroy']]);
 Route::group(['prefix' => 'document', 'as' => 'document.'], function() {
+    Route::get('{document}/clone', [DocumentController::class, 'clone'])->name('clone');
     Route::get('{document}/download', [DocumentController::class, 'download'])->name('download');
 });

@@ -5,7 +5,8 @@
 @section('content')
     <h1>{{ $document->name }}</h1>
     <a href="{{ route('document.download', $document) }}">Download</a>
-    <a href="{{ route('document.download', $document) }}">Regenerate</a>
+    <a href="{{ route('template.show', $document->template_id) }}">Template</a>
+    <a href="{{ route('document.clone', [$document]) }}">Clone</a>
     <table>
     @foreach($document->bindings['bindings'] as $binding => $value)
         <tr>
