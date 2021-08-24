@@ -23,7 +23,7 @@
 @foreach($document->template->bindings['rows'] as $row => $fields)
     <tr>
         <td><i>{{ $row }}</i></td>
-        <td>{{ Form::textarea($row, json_encode($document->bindings['rows'][$row], JSON_PRETTY_PRINT)) }}</td>
+        <td>{{ Form::textarea($row, json_encode($document->bindings['rows'][$row] ?? [array_combine($fields, $fields)], JSON_PRETTY_PRINT)) }}</td>
     </tr>
 @endforeach
 <tr>
@@ -32,7 +32,7 @@
 @foreach($document->template->bindings['blocks'] as $block => $values)
     <tr>
         <td><i>{{ $block }}</i></td>
-        <td>{{ Form::textarea($block, json_encode($document->bindings['blocks'][$block], JSON_PRETTY_PRINT)) }}</td>
+        <td>{{ Form::textarea($block, json_encode($document->bindings['blocks'][$block] ?? [array_combine($values, $values)], JSON_PRETTY_PRINT)) }}</td>
     </tr>
 @endforeach
 </table>
