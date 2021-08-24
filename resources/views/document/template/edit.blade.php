@@ -3,6 +3,7 @@
 @section('title', $template->name.' edit')
 
 @section('content')
+    {{ print_r($errors) }}
 {{ Form::model($template, ['route' => ['template.update', $template], 'files' => true, 'method' => 'put']) }}
 {{ Form::label('name', 'Name') }}
 {{ Form::text('name') }}

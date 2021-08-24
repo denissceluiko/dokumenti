@@ -31,6 +31,17 @@
         <td>{{ Form::textarea($row, '['.json_encode(array_combine($fields, $fields), JSON_PRETTY_PRINT).']') }}</td>
     </tr>
 @endforeach
+<tr>
+    <td colspan="2"><b>Blocks</b></td>
+</tr>
+@isset($template->bindings['blocks'])
+    @foreach($template->bindings['blocks'] as $block => $values)
+        <tr>
+            <td><i>{{ $block }}</i></td>
+            <td>{{ Form::textarea($block, '['.json_encode(array_combine($values, $values), JSON_PRETTY_PRINT).']') }}</td>
+        </tr>
+    @endforeach
+@endisset
 </table>
 {{ Form::submit('Submit') }}
 {{ Form::close() }}
@@ -41,4 +52,9 @@
 {{ Form::file('template_batch_import_file') }}
 {{ Form::submit('Submit') }}
 {{ Form::close() }}
+
+    <h1>Documents</h1>
+    @foreach($template->documents as $document)
+        <div><a href="{{ route('document.show', $document) }}">{{ $document->name }}</a></div>
+    @endforeach
 @endsection

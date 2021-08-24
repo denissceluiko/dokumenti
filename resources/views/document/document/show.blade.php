@@ -20,5 +20,11 @@
             <td><pre>{{ json_encode($value, JSON_PRETTY_PRINT) }}</pre></td>
         </tr>
     @endforeach
+    @foreach($document->bindings['blocks'] as $block => $values)
+        <tr>
+            <td>{{ $block }}</td>
+            <td><pre>{{ json_encode($values, JSON_PRETTY_PRINT) }}</pre></td>
+        </tr>
+    @endforeach
     </table>
 @endsection

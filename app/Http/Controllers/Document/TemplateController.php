@@ -55,6 +55,7 @@ class TemplateController extends Controller
 
     public function show(Template $template)
     {
+        $template->load('documents');
         return view('document.template.show', compact('template'));
     }
 

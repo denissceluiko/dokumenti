@@ -26,6 +26,15 @@
         <td>{{ Form::textarea($row, json_encode($document->bindings['rows'][$row], JSON_PRETTY_PRINT)) }}</td>
     </tr>
 @endforeach
+<tr>
+    <td colspan="2"><b>Blocks</b></td>
+</tr>
+@foreach($document->template->bindings['blocks'] as $block => $values)
+    <tr>
+        <td><i>{{ $block }}</i></td>
+        <td>{{ Form::textarea($block, json_encode($document->bindings['blocks'][$block], JSON_PRETTY_PRINT)) }}</td>
+    </tr>
+@endforeach
 </table>
 {{ Form::submit('Submit') }}
 {{ Form::close() }}

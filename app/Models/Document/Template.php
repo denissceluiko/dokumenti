@@ -32,8 +32,12 @@ class Template extends Model
 
         $bindings = $this->getRequestBindings($params);
 
-        foreach($bindings['rows'] as $row => $value) {
-            $proc->cloneRowAndSetValues($row, $value);
+        foreach($bindings['rows'] as $row => $values) {
+            $proc->cloneRowAndSetValues($row, $values);
+        }
+
+        foreach($bindings['blocks'] as $block => $values) {
+            $proc->cloneBlock($block, 0, true, false, $values);
         }
         $proc->setValues($bindings['bindings']);
 
@@ -85,11 +89,15 @@ class Template extends Model
         $proc = new TemplateProcessor($this->getStoragePath());
         $bindings = $proc->getVariables();
         $rowMacros = $this->locateRowMacros($bindings);
-        $bindings = $this->removeRowMacros($bindings, $rowMacros);
+        $bindings = $this->removeMacros($bindings, $rowMacros);
         $rowGroups = $this->groupRowMacros($rowMacros);
+        $blockMacros = $this->locateBlockMacros($bindings);
+        $bindings = $this->removeMacros($bindings, $blockMacros);
+        $blockGroups = $this->groupBlockMacros($blockMacros);
 
         return [
             'rows' => $rowGroups,
+            'blocks' => $blockGroups,
             'bindings' => $bindings,
         ];
     }
@@ -119,10 +127,16 @@ class Template extends Model
         return array_values($rows);
     }
 
-    protected function removeRowMacros(array $bindings, array $rowMacros)
+    protected function locateBlockMacros(array $bindings)
     {
-        return array_values(array_filter($bindings, function($binding) use ($rowMacros) {
-            return !in_array($binding, $rowMacros);
+        $rows = preg_grep('/block__(.*)\.?(.*)/i', $bindings);
+        return array_values($rows);
+    }
+
+    protected function removeMacros(array $bindings, array $macros)
+    {
+        return array_values(array_filter($bindings, function($binding) use ($macros) {
+            return !in_array($binding, $macros);
         }));
     }
 
@@ -135,16 +149,32 @@ class Template extends Model
                 list($macro, $cell) = explode('.', $macro);
                 $groups[$macro][] = $macro.'.'.$cell;
             } else {
-                $groups[$macro] = [$macro];
+                $groups[$macro][] = $macro;
             }
         }
         return $groups;
     }
 
-    protected function extractRowValues(array &$params)
+    protected function groupBlockMacros(array $macros)
+    {
+        $groups = [];
+        foreach ($macros as $macro)
+        {
+            $macro = ltrim($macro, '/');
+            if (strpos($macro, '.')) {
+                list($macro, $cell) = explode('.', $macro);
+                $groups[$macro][] = $macro.'.'.$cell;
+            } elseif(!isset($groups[$macro])) {
+                $groups[$macro] = [];
+            }
+        }
+        return $groups;
+    }
+
+    protected function extractValues(array &$params, $type)
     {
         $rows = [];
-        $rowNames = array_keys($this->bindings['rows']);
+        $rowNames = array_keys($this->bindings[$type]);
         $params = array_filter($params, function ($param, $key) use ($rowNames, &$rows) {
             if (in_array($key, $rowNames)) {
                 $rows[$key] = $param;
@@ -158,13 +188,19 @@ class Template extends Model
     protected function getRequestBindings($params)
     {
         $rows = [];
-        foreach($this->extractRowValues($params) as $row => $value) {
+        foreach($this->extractValues($params, 'rows') as $row => $value) {
             $rows[$row] = json_decode($value, true);
+        }
+
+        $blocks = [];
+        foreach($this->extractValues($params, 'blocks') as $block => $value) {
+            $blocks[$block] = json_decode($value, true);
         }
 
         return [
             'bindings' => collect($params)->only($this->bindings['bindings'])->toArray(),
             'rows' => $rows,
+            'blocks' => $blocks,
         ];
     }
 
