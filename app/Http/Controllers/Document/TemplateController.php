@@ -63,7 +63,7 @@ class TemplateController extends Controller
     {
         $this->validate($request, []);
 
-        $document = $template->compile($request->all());
+        $document = $template->generateNewDocument($request->all());
         return redirect()->route('document.show', $document);
     }
 

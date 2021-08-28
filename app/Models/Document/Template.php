@@ -22,35 +22,53 @@ class Template extends Model
         'bindings' => 'array'
     ];
 
-    public function compile($params)
-    {
-        $params = array_merge($params, [
-            'x-template-name' => $this->name,
-        ]);
+    protected $__params = [
+        'bindings' => [],
+        'rows' => [],
+        'blocks' => [],
+    ];
 
+    public function generateNewDocument(array $params)
+    {
+        $processor = $this->setParams($params)->compile();
+
+        return $this->documents()->create([
+            'name' => Document::cleanPath($this->resolveFilename()),
+            'path' => Document::saveFile($processor->save()),
+            'bindings' => $this->__params,
+        ]);
+    }
+
+    public function regenerateDocument(array $params)
+    {
+        return $this->setParams($params)->compile()->save();
+    }
+
+    protected function compile() : TemplateProcessor
+    {
         $proc = new TemplateProcessor($this->getStoragePath());
 
-        $bindings = $this->getRequestBindings($params);
-
-        foreach($bindings['rows'] as $row => $values) {
+        foreach($this->__params['rows'] as $row => $values) {
             $proc->cloneRowAndSetValues($row, $values);
         }
 
-        foreach($bindings['blocks'] as $block => $values) {
+        foreach($this->__params['blocks'] as $block => $values) {
             $proc->cloneBlock($block, 0, true, false, $values);
         }
-        $proc->setValues($bindings['bindings']);
+        $proc->setValues($this->__params['bindings']);
 
-        return $this->documents()->create([
-            'name' => Document::cleanPath($this->resolveFilename($params)),
-            'path' => Document::saveFile($proc->save()),
-            'bindings' => $bindings,
-        ]);
+        return $proc;
     }
 
     public function batch($path)
     {
         Excel::import(new TemplateBatchImport($this), $path);
+    }
+
+    public function setParams($params)
+    {
+        $this->__params = $this->getBindings($params);
+        return $this;
     }
 
     public static function createFromUpload(Request $request)
@@ -60,7 +78,7 @@ class Template extends Model
         $template->naming = $request->naming;
         $template->path = $request->file('template_file')->store(self::getStoragePrefix());
         $template->hash = $template->getFileHash();
-        $template->bindings = $template->resolveFileBindings();
+        $template->bindings = $template->getBindingsFromFile();
         $template->save();
 
         return $template;
@@ -75,7 +93,7 @@ class Template extends Model
 
             $this->path = $request->file('template_file')->store(self::getStoragePrefix());
             $this->hash = $this->getFileHash();
-            $this->bindings = $this->resolveFileBindings();
+            $this->bindings = $this->getBindingsFromFile();
 
             unlink($oldTemplate);
         }
@@ -84,14 +102,16 @@ class Template extends Model
         return $this;
     }
 
-    protected function resolveFileBindings()
+    protected function getBindingsFromFile()
     {
         $proc = new TemplateProcessor($this->getStoragePath());
         $bindings = $proc->getVariables();
-        $rowMacros = $this->locateRowMacros($bindings);
+
+        $rowMacros = $this->locateMacros('row', $bindings);
         $bindings = $this->removeMacros($bindings, $rowMacros);
         $rowGroups = $this->groupRowMacros($rowMacros);
-        $blockMacros = $this->locateBlockMacros($bindings);
+
+        $blockMacros = $this->locateMacros('block', $bindings);
         $bindings = $this->removeMacros($bindings, $blockMacros);
         $blockGroups = $this->groupBlockMacros($blockMacros);
 
@@ -102,14 +122,14 @@ class Template extends Model
         ];
     }
 
-    protected function resolveFilename($params)
+    protected function resolveFilename()
     {
         $result = $this->naming;
         preg_match_all('/\$\{(.*?)}/i', $this->naming, $matches);
 
         for($i=0; $i<count($matches[0]); $i++)
         {
-            $result = str_replace($matches[0][$i], $params[$matches[1][$i]], $result);
+            $result = str_replace($matches[0][$i], $this->__params['bindings'][$matches[1][$i]], $result);
         }
 
         return $result.'.docx';
@@ -117,19 +137,13 @@ class Template extends Model
 
     public function resolveAgain()
     {
-        $this->bindings = $this->resolveFileBindings();
+        $this->bindings = $this->getBindingsFromFile();
         $this->save();
     }
 
-    protected function locateRowMacros(array $bindings)
+    protected function locateMacros($type, array $macros)
     {
-        $rows = preg_grep('/row__(.*)\.?(.*)/i', $bindings);
-        return array_values($rows);
-    }
-
-    protected function locateBlockMacros(array $bindings)
-    {
-        $rows = preg_grep('/block__(.*)\.?(.*)/i', $bindings);
+        $rows = preg_grep("/{$type}__(.*)\.?(.*)/i", $macros);
         return array_values($rows);
     }
 
@@ -140,6 +154,12 @@ class Template extends Model
         }));
     }
 
+    /**
+     * Groups row macros
+     *
+     * @param array $macros
+     * @return array
+     */
     protected function groupRowMacros(array $macros)
     {
         $groups = [];
@@ -149,59 +169,94 @@ class Template extends Model
                 list($macro, $cell) = explode('.', $macro);
                 $groups[$macro][] = $macro.'.'.$cell;
             } else {
+                // Row macro has at least one element, the one initializing it.
                 $groups[$macro][] = $macro;
             }
         }
         return $groups;
     }
 
+    /**
+     * Groups block macros
+     *
+     * @param array $macros
+     * @return array
+     */
     protected function groupBlockMacros(array $macros)
     {
         $groups = [];
         foreach ($macros as $macro)
         {
+            // Catch closing macro
             $macro = ltrim($macro, '/');
+
             if (strpos($macro, '.')) {
                 list($macro, $cell) = explode('.', $macro);
                 $groups[$macro][] = $macro.'.'.$cell;
             } elseif(!isset($groups[$macro])) {
+                // Block macro can be empty inside
                 $groups[$macro] = [];
             }
         }
         return $groups;
     }
 
-    protected function extractValues(array &$params, $type)
+    /**
+     * Populates the template's $type of bindings with $params as a source.
+     *
+     * @param $type
+     * @param array $params
+     * @return array
+     */
+    protected function getValues($type, array &$params)
     {
-        $rows = [];
-        $rowNames = array_keys($this->bindings[$type]);
-        $params = array_filter($params, function ($param, $key) use ($rowNames, &$rows) {
-            if (in_array($key, $rowNames)) {
-                $rows[$key] = $param;
+        $result = [];
+        $typeNames = array_keys($this->bindings[$type]);
+        $params = array_filter($params, function ($param, $key) use ($typeNames, &$result) {
+            if (in_array($key, $typeNames)) {
+                $result[$key] = $param;
                 return false;
             }
             return true;
         }, ARRAY_FILTER_USE_BOTH);
-        return $rows;
+        return $result;
     }
 
-    protected function getRequestBindings($params)
+    public function getBindings($params)
     {
+        if (self::isBindingsArray($params)) {
+            $params = array_merge(
+                $params['bindings'],
+                $params['rows'],
+                $params['blocks']
+            );
+        }
+
         $rows = [];
-        foreach($this->extractValues($params, 'rows') as $row => $value) {
+        foreach($this->getValues('rows', $params) as $row => $value) {
             $rows[$row] = json_decode($value, true);
         }
 
         $blocks = [];
-        foreach($this->extractValues($params, 'blocks') as $block => $value) {
+        foreach($this->getValues('blocks', $params) as $block => $value) {
             $blocks[$block] = json_decode($value, true);
         }
 
         return [
-            'bindings' => collect($params)->only($this->bindings['bindings'])->toArray(),
+            'bindings' => collect($params)
+                ->only($this->bindings['bindings'])
+                ->merge(['x-template-name' => $this->name])
+                ->toArray(),
             'rows' => $rows,
             'blocks' => $blocks,
         ];
+    }
+
+    public static function isBindingsArray($params)
+    {
+        return array_key_exists('bindings', $params) &&
+            array_key_exists('rows', $params) &&
+            array_key_exists('blocks', $params);
     }
 
     public function getFileHash()

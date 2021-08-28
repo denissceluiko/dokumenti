@@ -34,6 +34,6 @@ class CompileTemplateBatch implements ShouldQueue
      */
     public function handle()
     {
-        $this->template->compile($this->row);
+        $this->template->generateNewDocument($this->row);
     }
 }

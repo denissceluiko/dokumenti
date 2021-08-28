@@ -6,8 +6,17 @@
     <h1>{{ $document->name }}</h1>
     <a href="{{ route('document.download', $document) }}">Download</a>
     <a href="{{ route('template.show', $document->template_id) }}">Template</a>
-    <a href="{{ route('document.clone', [$document]) }}">Clone</a>
+    <a href="{{ route('document.clone', $document) }}">Clone</a>
+    <a href="{{ route('document.edit', $document) }}">Edit</a>
     <table>
+        <tr>
+            <td>Created</td>
+            <td>{{ $document->created_at->format('d.m.Y H:i:s') }}</td>
+        </tr>
+        <tr>
+            <td>Updated</td>
+            <td>{{ $document->updated_at->format('d.m.Y H:i:s') }}</td>
+        </tr>
     @foreach($document->bindings['bindings'] as $binding => $value)
         <tr>
             <td>{{ $binding }}</td>

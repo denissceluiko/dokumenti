@@ -15,6 +15,7 @@ class Document extends Model
 
     protected $casts = [
         'bindings' => 'array',
+        'template' => Template::class,
     ];
 
     protected const PATH = 'documents';
@@ -31,6 +32,18 @@ class Document extends Model
             'name' => self::cleanPath($params['filename']),
             'path' => self::saveFile($params['path']),
         ]));
+    }
+
+    public function regenerate()
+    {
+        if (file_exists($this->getFullPath())) {
+            unlink($this->getFullPath());
+        }
+
+        $this->update([
+            'path' => self::saveFile($this->template->regenerateDocument($this->bindings))
+        ]);
+
     }
 
     public function getFullPath()

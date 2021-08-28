@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Document;
 
 use App\Http\Controllers\Controller;
 use App\Models\Document;
+use Illuminate\Http\Request;
 
 class DocumentController extends Controller
 {
     public function index()
     {
-        $documents = Document::all();
+        $documents = Document::with('template')->get();
         return view('document.document.index', compact('documents'));
     }
 
@@ -22,6 +23,27 @@ class DocumentController extends Controller
     {
         $document->load('template');
         return view('document.document.clone', compact('document'));
+    }
+
+    public function edit(Document $document)
+    {
+        return view('document.document.edit', compact('document'));
+    }
+
+    public function update(Request $request, Document $document)
+    {
+        $bindings = $document->template->getBindings($request->all());
+
+        $updated = $document->update([
+            'name' => $request->name,
+            'bindings' => $bindings
+        ]);
+
+        if ($updated) {
+            $document->regenerate();
+        }
+
+        return redirect()->route('document.show', $document);
     }
 
     public function destroy(Document $document)
