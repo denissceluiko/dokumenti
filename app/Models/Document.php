@@ -15,7 +15,6 @@ class Document extends Model
 
     protected $casts = [
         'bindings' => 'array',
-        'template' => Template::class,
     ];
 
     protected const PATH = 'documents';
