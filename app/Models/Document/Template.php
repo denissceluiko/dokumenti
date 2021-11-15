@@ -203,6 +203,7 @@ class Template extends Model
 
     /**
      * Populates the template's $type of bindings with $params as a source.
+     * Removes $type bindings from $params.
      *
      * @param $type
      * @param array $params
@@ -234,12 +235,12 @@ class Template extends Model
 
         $rows = [];
         foreach($this->getValues('rows', $params) as $row => $value) {
-            $rows[$row] = json_decode($value, true);
+            $rows[$row] = static::extractRow($value);
         }
 
         $blocks = [];
         foreach($this->getValues('blocks', $params) as $block => $value) {
-            $blocks[$block] = json_decode($value, true);
+            $blocks[$block] = static::extractRow($value);
         }
 
         return [
@@ -250,6 +251,11 @@ class Template extends Model
             'rows' => $rows,
             'blocks' => $blocks,
         ];
+    }
+
+    public static function extractRow($row) : array
+    {
+        return is_array($row) ? $row : json_decode($row, true);
     }
 
     public static function isBindingsArray($params)

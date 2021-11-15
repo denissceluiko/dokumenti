@@ -16,7 +16,8 @@
         "laravel/tinker": "^2.5",
         "laravelcollective/html": "^6.2",
         "maatwebsite/excel": "^3.1",
-        "phpoffice/phpword": "^0.17.0"
+        "phpoffice/phpword": "^0.17.0",
+        "ext-json": "*"
     },
     "require-dev": {
         "facade/ignition": "^2.5",
