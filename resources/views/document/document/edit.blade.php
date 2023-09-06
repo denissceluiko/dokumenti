@@ -19,7 +19,7 @@
 @foreach($document->template->bindings['bindings'] as $field)
 <tr>
 <td>{{ Form::label($field, $field) }}</td>
-<td>{{ Form::text($field, $document->bindings['bindings'][$field]) }}</td>
+<td>{{ Form::text($field, $document->bindings['bindings'][$field] ?? '') }}</td>
 </tr>
 @endforeach
 <tr>
